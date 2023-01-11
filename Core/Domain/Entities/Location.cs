@@ -11,6 +11,10 @@ namespace DroneSquad.Core.Domain.Entities
 
         public Location(string name, int weigth, int id)
         {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+            if (weigth <= 0)
+                throw new ArgumentOutOfRangeException("the weigth is incorret.");
             Name = name;
             Weigth = weigth;
             Id = id;

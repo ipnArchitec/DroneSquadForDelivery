@@ -20,7 +20,10 @@ namespace DroneSquad.Core.Domain.Entities
         private const uint _startingPoint = 1;
         public Drone(string name, int maxWeigth, int id)
         {
-
+            if(string.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+            if (maxWeigth <= 0)
+                throw new ArgumentOutOfRangeException("the weigth is incorret.");
             Name = name;
             MaxWeigth = maxWeigth;
             Id = id;
