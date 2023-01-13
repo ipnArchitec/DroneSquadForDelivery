@@ -13,8 +13,8 @@ Configurations:
 
 Go to the folder ==> Infraestructure/Sources/Configuration.txt
 
-configuration example:
- [drone_1],[20],[dron_2],[25] </br>
+configuration example: </br>
+[drone_1],[20],[dron_2],[25] </br>
 [Location1],[36] </br>
 [Location2],[10] </br>
 [Location3],[4] </br>
