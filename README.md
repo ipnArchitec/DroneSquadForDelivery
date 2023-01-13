@@ -15,9 +15,18 @@ Go to the folder ==> Infraestructure/Sources/Configuration.txt
 
 configuration example:
  
-drone_1,20|dron_2,25
-Location1,3|,6|Location2,10|Location3,4|Location4,10|Location5,8|Location6,10|Location7,10|Location8,11|Location9,30
+drone_1,20,dron_2,25
+Location1,36
+Location2,10
+Location3,4
+Location4,10
+Location5,8
+Location6,10
+Location7,10
+Location8,11
+Location9,30
 
 Explanation:
  - in the first line the drones are configured.
- - In the second line we will add the location to be delivered by the drones.
+ - the following lines are to add locations
+
