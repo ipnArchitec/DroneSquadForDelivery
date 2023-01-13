@@ -25,9 +25,18 @@ namespace DroneSquad.Infraestructure.Adapters
             if (content.Length < 2)
                 throw new Exception("The configuration file has errors.");
 
-            var rows = content[0].Split('|');
+            var rows = content[0].Split(',').ToList();
+            List<string> DroneRows = new List<string>();  
+            var drones = rows.Split(2);
+            foreach (var drone in drones)
+            {
+                var records = drone.Select(x=>x.Trim()).ToArray();
+                var record =string.Join(',', records);
+                DroneRows.Add(record);
+            }
+            
             Func<string, int, int, Drone> entity = (a, b, c) => new Drone(a, b, c);
-            return rows.GetList(entity);
+            return DroneRows.ToArray().GetList(entity);
 
         }
     }

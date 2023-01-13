@@ -41,6 +41,8 @@ namespace DroneSquad.Core.Domain.Entities
         public int AvaibleWeigth { get; private set; }
         public bool IsFullWeigth { get; private set; }
 
+        private List<string> _tripsMade = new();
+        public IReadOnlyCollection<string> TripsMade  => _tripsMade.AsReadOnly();
         public bool AddPackage(Location location)
         {
 
@@ -69,11 +71,13 @@ namespace DroneSquad.Core.Domain.Entities
             if (!AssignedLocations.Any())
                 return false;
 
-            RegisterDomainEvents.Raise(new PackageDelivered() { Message = $"{Name}" });
-            RegisterDomainEvents.Raise(new PackageDelivered() { Message = $"Trip #{numberOfTrip}" });
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Trip #{numberOfTrip}");
             var outputLocations= AssignedLocations.Select(x => $"{x.Name}").ToArray();
             var text = string.Join(',', outputLocations);
-            RegisterDomainEvents.Raise(new PackageDelivered() { Message = text });
+            sb.AppendLine(text);
+            _tripsMade.Add(sb.ToString());
+            //RegisterDomainEvents.Raise(new PackageDelivered() { Message = sb.ToString() });
             IsFullWeigth = false;
             AvaibleWeigth = MaxWeigth;
             AssignedWeigth = 0;

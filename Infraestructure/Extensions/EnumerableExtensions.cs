@@ -15,6 +15,10 @@ namespace DroneSquad.Infraestructure.Extensions
             var rows = items.Select(x => x.Id).ToList();
             return new RoundRobinList<int>(rows);
         }
-
+        public static List<List<T>> Split<T>(this IList<T> source, int length)
+        {
+            return Enumerable.Range(0, (source.Count + length - 1) / length)
+                             .Select(n => source.Skip(n * length).Take(length).ToList()).ToList();
+        }
     }
 }

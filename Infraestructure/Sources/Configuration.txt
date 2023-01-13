@@ -1,2 +1,10 @@
-﻿drone_1,20|dron_2,25
-Location1,3|,6|Location2,10|Location3,4|Location4,10|Location5,8|Location6,10|Location7,10|Location8,11|Location9,30
+﻿drone_1,20,dron_2,25
+Location1,36
+Location2,10
+Location3,4
+Location4,10
+Location5,8
+Location6,10
+Location7,10
+Location8,11
+Location9,30

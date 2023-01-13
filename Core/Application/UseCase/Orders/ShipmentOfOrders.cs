@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
 {
-    public class ShipmentOfOrders
+    public class ShipmentOfOrders 
     {
 
         protected ILocationRepository _packageRepository;
@@ -33,12 +33,12 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
             _logManager = logManager;
         }
 
-
+        private List<Location> _locations = new();
+        private List<Drone> _drones = new();
+        public IReadOnlyCollection<Location> Locations => _locations.AsReadOnly();
         public int NumberOfTrip { get; private set; } = 0;
-        public List<Location> Locations { get; private set; }
-
-        public List<Drone> Drones { get; private set; }
-
+        public IReadOnlyCollection<Drone> Drones => _drones.AsReadOnly();
+        
         public bool IsCompleted { get; private set; }
 
         public RoundRobinList<int> roundRobinList {  get; private set; }
@@ -49,21 +49,33 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                 var packages = _packageRepository.GetAllAsync();
                 var drones = _droneRepository.GetAllAsync();
                 await Task.WhenAll(drones, packages);
-                Locations = packages.Result;
-                Drones = drones.Result;
-                var outputDrones= Drones.Select(x => $"Name:{x.Name}, MaxWeight:{x.MaxWeigth}").ToArray();
-                _logManager.Information("Inputs:");
-                _logManager.Information("*******************************************:");
+                _locations = packages.Result;
+                _drones = drones.Result;
+
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("Inputs:");
+                sb.AppendLine("*******************************************");
+                var outputDrones= Drones.Select(x => $"{x.Name},{x.MaxWeigth}").ToArray();
                 var text = string.Join(',', outputDrones);
-                _logManager.Information(text);
+                sb.AppendLine(text);
                 foreach (var location in Locations)
                 {
-                    _logManager.Information($"Name:{location.Name}, Weigth:{location.Weigth}");
+                    sb.AppendLine($"{location.Name},{location.Weigth}");
                 }
-                _logManager.Information("Outputs:");
-                _logManager.Information("*******************************************:");
-
+              
+                sb.AppendLine("Outputs:");
+                sb.AppendLine("*******************************************");
+                _logManager.Information(sb.ToString());
                 await ProccessDeliveryAsync();
+                _drones.ForEach(Dron =>
+                {
+                    _logManager.Information($"{Dron.Name}");
+                    foreach (var trip in Dron.TripsMade)
+                    {
+                        _logManager.Information(trip);
+                    }
+
+                });
                 IsCompleted = true;
 
             }
@@ -74,6 +86,13 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
             return IsCompleted;
         }
 
+
+        /// <summary>
+        /// This method will be executed recursively until the drone is assigned the maximum weight it can carry.
+        /// Therefore, you can make n trips until there are locations to be assigned that meet the weight that the drone can carry.
+        /// the distribution algorithm is roundRobint
+        /// </summary>
+        /// <returns></returns>
         private async Task ProccessDeliveryAsync()
         {
             NumberOfTrip++;
@@ -131,7 +150,7 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                 AssingLocationToDrone();
             }
 
-            var end = Drones.Count(x => x.AssignedLocations.Count() == 0) == Drones.Count();
+            var end = Drones.Count(x => x.AssignedLocations.Count == 0) == Drones.Count;
             if (end)
                 return false;
 
@@ -140,6 +159,6 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
 
         }
 
-
+    
     }
 }
