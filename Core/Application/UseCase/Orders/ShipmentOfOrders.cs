@@ -55,12 +55,12 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine("Inputs:");
                 sb.AppendLine("*******************************************");
-                var outputDrones= Drones.Select(x => $"{x.Name},{x.MaxWeigth}").ToArray();
+                var outputDrones= Drones.Select(x => $"[{x.Name}],[{x.MaxWeigth}]").ToArray();
                 var text = string.Join(',', outputDrones);
                 sb.AppendLine(text);
                 foreach (var location in Locations)
                 {
-                    sb.AppendLine($"{location.Name},{location.Weigth}");
+                    sb.AppendLine($"[{location.Name}],[{location.Weigth}]");
                 }
               
                 sb.AppendLine("Outputs:");
@@ -69,7 +69,7 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                 await ProccessDeliveryAsync();
                 _drones.ForEach(Dron =>
                 {
-                    _logManager.Information($"{Dron.Name}");
+                    _logManager.Information($"[{Dron.Name}]");
                     foreach (var trip in Dron.TripsMade)
                     {
                         _logManager.Information(trip);

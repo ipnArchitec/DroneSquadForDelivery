@@ -28,7 +28,7 @@ namespace DroneSquad.Infraestructure.Adapters
             List<string> locations = new List<string>(content.Length - 1);
             for(var i =1; i < content.Length; i ++)
             {
-                locations.Add(content[i]);
+                locations.Add(content[i].Replace("[", "").Replace("]", ""));
             }
             Func<string, int, int, Location> entity = (a, b, c) => new Location(a, b, c);
             return locations.ToArray().GetList(entity);

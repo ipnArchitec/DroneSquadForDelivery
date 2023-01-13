@@ -30,7 +30,7 @@ namespace DroneSquad.Infraestructure.Adapters
             var drones = rows.Split(2);
             foreach (var drone in drones)
             {
-                var records = drone.Select(x=>x.Trim()).ToArray();
+                var records = drone.Select(x=>x.Trim().Replace("[","").Replace("]","")).ToArray();
                 var record =string.Join(',', records);
                 DroneRows.Add(record);
             }

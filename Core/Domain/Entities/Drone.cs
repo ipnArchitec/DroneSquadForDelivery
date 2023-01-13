@@ -73,7 +73,7 @@ namespace DroneSquad.Core.Domain.Entities
 
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Trip #{numberOfTrip}");
-            var outputLocations= AssignedLocations.Select(x => $"{x.Name}").ToArray();
+            var outputLocations= AssignedLocations.Select(x => $"[{x.Name}]").ToArray();
             var text = string.Join(',', outputLocations);
             sb.AppendLine(text);
             _tripsMade.Add(sb.ToString());
