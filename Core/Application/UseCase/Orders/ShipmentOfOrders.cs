@@ -6,14 +6,17 @@ using DroneSquad.Infraestructure.Extensions;
 using RoundRobin;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Data;
+using System.IO;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
 {
-    public class ShipmentOfOrders 
+    public class ShipmentOfOrders
     {
 
         protected ILocationRepository _packageRepository;
@@ -38,10 +41,10 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
         public IReadOnlyCollection<Location> Locations => _locations.AsReadOnly();
         public int NumberOfTrip { get; private set; } = 0;
         public IReadOnlyCollection<Drone> Drones => _drones.AsReadOnly();
-        
+
         public bool IsCompleted { get; private set; }
 
-        public RoundRobinList<int> roundRobinList {  get; private set; }
+        public RoundRobinList<int> roundRobinList { get; private set; }
         public async Task<bool> Handler()
         {
             try
@@ -55,14 +58,14 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine("Inputs:");
                 sb.AppendLine("*******************************************");
-                var outputDrones= Drones.Select(x => $"[{x.Name}],[{x.MaxWeigth}]").ToArray();
+                var outputDrones = Drones.Select(x => $"[{x.Name}],[{x.MaxWeigth}]").ToArray();
                 var text = string.Join(',', outputDrones);
                 sb.AppendLine(text);
                 foreach (var location in Locations)
                 {
                     sb.AppendLine($"[{location.Name}],[{location.Weigth}]");
                 }
-              
+
                 sb.AppendLine("Outputs:");
                 sb.AppendLine("*******************************************");
                 _logManager.Information(sb.ToString());
@@ -72,6 +75,7 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                     _logManager.Information($"[{Dron.Name}]");
                     foreach (var trip in Dron.TripsMade)
                     {
+
                         _logManager.Information(trip);
                     }
 
@@ -79,7 +83,7 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
                 IsCompleted = true;
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logManager.Error(ex.Message);
             }
@@ -96,12 +100,8 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
         private async Task ProccessDeliveryAsync()
         {
             NumberOfTrip++;
-            roundRobinList = Drones.ToRoundRobinList();
             var packageAvailable = AssingLocationToDrone();
-            foreach (var drone in Drones)
-            {
-                drone.GetShortestPath();
-            }
+        
             foreach (var drone in Drones)
             {
                 drone.OrderDelivery(NumberOfTrip);
@@ -110,43 +110,90 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
             if (packageAvailable)
                 await ProccessDeliveryAsync();
         }
+
+
+  
+    
+
+
+        private Tuple<int, List<int>, List<int>> GetOptimalNumbers(int[] arr, int target)
+        {
+            Array.Sort(arr);
+            List<int> closestNumbers = new List<int>();
+            List<int> indexValues = new List<int>();
+            int closestSum = int.MaxValue;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                int sum = arr[i];
+                List<int> subset = new List<int> { arr[i] };
+                List<int> indexArr = new List<int> { i };
+                for (int j = i + 1; j < arr.Length; j++)
+                {
+                    if (sum + arr[j] <= target)
+                    {
+                        subset.Add(arr[j]);
+                        indexArr.Add(j);
+                        sum += arr[j];
+                    }
+                    else if (Math.Abs(target - sum) < Math.Abs(target - closestSum))
+                    {
+                        closestSum = sum;
+                        closestNumbers = new List<int>(subset);
+                        indexValues = new List<int>(indexArr);
+                        break;
+                    }
+                }
+            }
+            return new Tuple<int, List<int>, List<int>>(closestSum, closestNumbers, indexValues);
+        }
+        private List<Location> GetOptimalLocations(int[] optimal)
+        {
+            var loc = Locations.Where(x => x.IsAsigned == false).OrderBy(x => x.Weigth).ToList();
+            var equivalentId = new List<int>(optimal.Length);
+            for (var i = 0; i < optimal.Length; i++)
+            {
+                equivalentId.Add(loc[optimal[i]].Id);
+            }
+            var query = equivalentId.Join(Locations, p => p, r => r.Id, (p, r) => r);
+            return query.ToList();
+        }
+        private void CheckListLocation(List<Location> locations)
+        {
+            foreach (var location in locations)
+            {
+                location.SetAsAssigned();
+            }
+        }
+
+    
         private bool AssingLocationToDrone()
         {
             if (!Locations.Any())
                 throw new Exception("There are no locations to assign.\r\n");
 
-            List<int> _droneNotAvailable = new List<int>();
-            var packages = Locations.Where(x => x.IsAsigned == false).OrderBy(x => x.Id).ToList();
-
-            foreach (var p in packages)
+            foreach (var dron in Drones)
             {
-                var dr = roundRobinList.Next();
-                var drone = Drones.First(x=>x.Id == dr);
-       
-                if (drone.IsFullWeigth == false && !packages.Any(x => drone.AssignedWeigth + x.Weigth <= drone.MaxWeigth && x.IsAsigned == false))
+
+                var packages = Locations.Where(x => x.IsAsigned == false).Select(x => x.Weigth).ToArray();
+                var result = GetOptimalNumbers(packages, dron.MaxWeigth);
+                if (result.Item2 is not null && result.Item2.Count > 0 && result.Item1 <= dron.MaxWeigth)
                 {
-                     drone.SetFullWeigth();
-                    _droneNotAvailable.Add(drone.Id);
+
+                    var locations = this.GetOptimalLocations(result.Item3.ToArray());
+                    dron.AddBulkPackage(locations);
+                    this.CheckListLocation(locations);
                 }
-
-
-                if (drone.AddPackage(p))
-                {
-                    p.SetAsAssigned();
-
-                }
-
+                else
+                    dron.SetNotAvailable();
+ 
             }
-
-          
             var hasRows = Locations.Any(x => x.IsAsigned == false);
-            var isFull = Drones.Where(x => x.IsFullWeigth).Count() == Drones.Count();
-        
+            var isFull = Drones.Where(x => x.IsNotAvailable).Count() == Drones.Count();
 
-            if (!isFull &&  hasRows)
+
+            if (!isFull && hasRows)
             {
-                var dronAvailable = Drones.Where(x => !_droneNotAvailable.Contains(x.Id)).ToList();
-                roundRobinList = dronAvailable.ToRoundRobinList();
+
                 AssingLocationToDrone();
             }
 
@@ -158,7 +205,8 @@ namespace DroneSquad.Core.Application.UseCase.ShipmentOrders
 
 
         }
+       
 
-    
+
     }
 }
